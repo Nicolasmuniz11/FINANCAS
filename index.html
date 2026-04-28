@@ -1760,6 +1760,31 @@ select.form-input optgroup { background: var(--card2); color: var(--text2); font
   .kpi-footer { font-size: 10px; gap: 4px; }
   .kpi-hint { font-size: 10px; line-height: 1.3; }
 
+  /* ── DASH HERO — stack vertically on mobile ── */
+  .dash-hero {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 20px 16px 16px;
+    gap: 16px;
+    margin-bottom: 14px;
+  }
+  .dash-hero-left { width: 100%; }
+  .dash-hero-value { font-size: clamp(28px, 8vw, 40px); margin-bottom: 6px; }
+  .dash-hero-meta { font-size: 11px; }
+  .dash-hero-right {
+    flex-direction: row;
+    width: 100%;
+    border-radius: var(--radius-sm);
+  }
+  .dash-mini-kpi {
+    flex: 1;
+    padding: 10px 8px;
+    min-width: 0;
+  }
+  .dash-mini-label { font-size: 9px; letter-spacing: .05em; margin-bottom: 4px; }
+  .dash-mini-val { font-size: 13px; }
+  .dash-mini-divider { height: auto; width: 1px; align-self: stretch; }
+
   /* Page header */
   .page-header { margin-bottom: 16px; }
   .page-header h2 { font-size: 22px; }
