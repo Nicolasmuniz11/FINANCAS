@@ -3078,6 +3078,7 @@ window.CAT_NAMES_INCOME = ['Salário','Freelance','Rendimentos','Aluguel','Prese
 
 
 const MO_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+window.MO_PT = MO_PT;
 const fmtMonth = raw => { const parts = raw.split('-'); const y = parts[0]; const m = parts[1]; return `${MO_PT[+m-1]}/${y.slice(2)}`; };
 const fmtDay   = raw => { if (!raw) return '—'; const parts = raw.split('-'); const d = parts[2] ? parts[2] : '01'; const m = parts[1]; const y = parts[0]; return `${d}/${MO_PT[+m-1]}/${y.slice(2)}`; };
 const txMonth  = raw => raw ? raw.slice(0,7) : '';
@@ -3085,6 +3086,10 @@ const fmt      = v => `$${Math.abs(v).toLocaleString('en-US',{minimumFractionDig
 const fmts     = v => Math.abs(v)>=1000 ? `$${(Math.abs(v)/1000).toFixed(1)}k` : `$${Math.abs(v).toFixed(0)}`;
 const fmtp     = v => `${Number(v).toFixed(1)}%`;
 const classify = p => p>30?{l:"Dominante",c:"#c47070"}:p>8?{l:"Alto",c:"#d4894a"}:p>4?{l:"Médio",c:"#c8a96e"}:{l:"Baixo",c:"#6eb896"};
+window.fmt = fmt;
+window.fmts = fmts;
+window.fmtp = fmtp;
+window.classify = classify;
 
 function fmtDate(val) {
   if (!val) return '—';
@@ -4271,6 +4276,7 @@ async function createTx(data) {
     updatedAt: serverTimestamp(),
   });
 }
+window.createTx = (...args) => createTx(...args);
 
 async function updateTx(id, data) {
   await updateDoc(txDoc(currentUser.uid, id), {
@@ -4278,10 +4284,12 @@ async function updateTx(id, data) {
     updatedAt: serverTimestamp(),
   });
 }
+window.updateTx = (...args) => updateTx(...args);
 
 async function deleteTxById(id) {
   await deleteDoc(txDoc(currentUser.uid, id));
 }
+window.deleteTxById = (...args) => deleteTxById(...args);
 
 /* ════════════════════════════════════════
    COMPUTE LAYER
@@ -4652,7 +4660,7 @@ function renderKPIs({ totalIncome, totalSpend, netBalance, ccTotal, MD }) {
   renderDashRecentTx();
 
   /* ── Insights Automáticos ── */
-  generateInsights();
+  _renderInsightStrip();
 }
 
 function renderDashRecentTx() {
@@ -4698,7 +4706,7 @@ function renderDashRecentTx() {
    SISTEMA DE INSIGHTS AUTOMÁTICOS
    Gera inteligência financeira real a partir dos dados do user
 ════════════════════════════════════════════════════════════ */
-function generateInsights() {
+function _renderInsightStrip() {
   const strip  = document.getElementById('insights-strip');
   const list   = document.getElementById('insights-list');
   if (!strip || !list) return;
@@ -5483,7 +5491,7 @@ window.refreshAll = () => {
 
   renderCharts(curPage, computed);
 
-  if (typeof renderInsight === 'function') renderInsight();
+  if (typeof window.renderInsight === 'function') window.renderInsight();
 };
 
 /* ════════════════════════════════════════
@@ -5530,7 +5538,7 @@ function _activatePage(pg) {
   if (pg==='transactions') renderTransactions();
   if (pg==='categories')   renderCats(CATS);
   if (pg==='budget')       renderBudget(CATS);
-  if (pg==='goals')        renderGoals();
+  if (pg==='goals')        { if (typeof window.renderGoals === 'function') window.renderGoals(); }
   if (pg==='dashboard')    { renderSrc(SRC); renderPieLeg(CATS); }
   if (pg==='investments')  renderInvestments();
   if (pg==='creditcard')   renderCreditCards();
@@ -5608,7 +5616,7 @@ document.addEventListener('keydown', e => {
   // Ctrl+E → exportar CSV
   if (e.key === 'e' && (e.ctrlKey || e.metaKey)) {
     e.preventDefault();
-    if (typeof exportCSV === 'function') exportCSV();
+    if (typeof window.exportCSV === 'function') window.exportCSV();
   }
 
   // Ctrl+F → focar busca de transações
@@ -5624,7 +5632,7 @@ document.addEventListener('keydown', e => {
     if (pageMap[e.key] && document.getElementById('app-shell').style.display === 'flex'
         && !document.getElementById('modal-overlay').classList.contains('open')) {
       e.preventDefault();
-      if (typeof window.goTo === 'function') window.goTo(pageMap[e.key]);
+      if (typeof window.go === 'function') window.go(pageMap[e.key], null);
     }
   }
 });
@@ -5671,6 +5679,14 @@ document.querySelectorAll('.primary-btn').forEach(btn => {
     setTimeout(() => r.remove(), 600);
   });
 });
+
+/* ── Expose real (pre-patch) function references for the undo system ── */
+window._realCreateTx     = window.createTx;
+window._realUpdateTx     = window.updateTx;
+window._realDeleteTxById = window.deleteTxById;
+
+/* ── Signal non-module scripts that the module is fully loaded ── */
+window.dispatchEvent(new CustomEvent('module-ready'));
 
 </script>
 
@@ -6417,6 +6433,10 @@ async function commitImportPreview() {
   closeImportPreview();
 }
 
+// Expose on window so the undo system can patch them and HTML onclick can call them
+window.closeImportPreview = closeImportPreview;
+window.commitImportPreview = commitImportPreview;
+
 window.importCSV = function() {
   const input = document.createElement('input');
   input.type = 'file';
@@ -6805,6 +6825,16 @@ function escHtml(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// closeAIImport: closes the AI import overlay (if present)
+function closeAIImport() {
+  const overlay = document.getElementById('ai-import-overlay');
+  if (overlay) overlay.classList.remove('open');
+}
+window.closeAIImport = closeAIImport;
+
+// updateAIConfirmLabel must also be on window since it's used from inline onchange
+window.updateAIConfirmLabel = updateAIConfirmLabel;
+
 window.confirmAIImport = function() {
   const checked = [...document.querySelectorAll('.ai-row-check:checked')].map(cb => +cb.dataset.idx);
   if (!checked.length) { toast('Selecione pelo menos uma transação.', 'error'); return; }
@@ -6840,9 +6870,12 @@ window.confirmAIImport = function() {
   }
 
   /* ── Intercept createTx ── */
-  const _origCreate = window.createTx || (typeof createTx !== 'undefined' ? createTx : null);
+  // Use lazy resolution: module script runs deferred, so window.createTx may not exist yet at script load time.
+  // We wrap window.createTx in a proxy that resolves the real function on first call.
+  let _origCreate = null;
   const _patchedCreate = async function(data) {
-    // call original — it returns void but mutates allTransactions via Firestore listener
+    if (!_origCreate) _origCreate = window._realCreateTx || null;
+    if (!_origCreate) { console.error('createTx not available'); return; }
     await _origCreate.call(this, data);
     // find the newly created tx (last one added)
     const newTx = [...(window.allTransactions || [])].pop();
@@ -6855,12 +6888,17 @@ window.confirmAIImport = function() {
       });
     }
   };
-  // Patch both window scope and module scope if possible
-  try { window.createTx = _patchedCreate; } catch(e) {}
+  // Install after module loads
+  window.addEventListener('module-ready', () => {
+    _origCreate = window._realCreateTx || window.createTx;
+    window.createTx = _patchedCreate;
+  });
 
   /* ── Intercept updateTx ── */
-  const _origUpdate = window.updateTx || (typeof updateTx !== 'undefined' ? updateTx : null);
+  let _origUpdate = null;
   const _patchedUpdate = async function(id, data) {
+    if (!_origUpdate) _origUpdate = window._realUpdateTx || null;
+    if (!_origUpdate) { console.error('updateTx not available'); return; }
     // Capture old state before update
     const old = (window.allTransactions || []).find(t => t.id === id);
     const snapshot = old ? { ...old } : null;
@@ -6875,11 +6913,16 @@ window.confirmAIImport = function() {
       });
     }
   };
-  try { window.updateTx = _patchedUpdate; } catch(e) {}
+  window.addEventListener('module-ready', () => {
+    _origUpdate = window._realUpdateTx || window.updateTx;
+    window.updateTx = _patchedUpdate;
+  });
 
   /* ── Intercept deleteTxById ── */
-  const _origDelete = window.deleteTxById || (typeof deleteTxById !== 'undefined' ? deleteTxById : null);
+  let _origDelete = null;
   const _patchedDelete = async function(id) {
+    if (!_origDelete) _origDelete = window._realDeleteTxById || null;
+    if (!_origDelete) { console.error('deleteTxById not available'); return; }
     const old = (window.allTransactions || []).find(t => t.id === id);
     const snapshot = old ? { ...old } : null;
     await _origDelete.call(this, id);
@@ -6893,8 +6936,10 @@ window.confirmAIImport = function() {
       });
     }
   };
-  try { window.deleteTxById = _patchedDelete; } catch(e) {}
-
+  window.addEventListener('module-ready', () => {
+    _origDelete = window._realDeleteTxById || window.deleteTxById;
+    window.deleteTxById = _patchedDelete;
+  });
   /* ── Intercept commitImportPreview (import CSV/PDF) ── */
   const _origCommit = window.commitImportPreview;
   window.commitImportPreview = async function() {
@@ -6914,18 +6959,21 @@ window.confirmAIImport = function() {
     }
   };
 
-  /* ── Low-level undo helpers (bypass interceptors) ── */
+  /* ── Low-level undo helpers (bypass interceptors, use real Firestore functions) ── */
   window._undoDeleteTx = async function(id) {
-    if (_origDelete) await _origDelete.call(null, id);
-    if (typeof _backupLocalTx === 'function') _backupLocalTx();
+    const fn = window._realDeleteTxById || _origDelete;
+    if (fn) await fn(id);
+    if (typeof window._backupLocalTx === 'function') window._backupLocalTx();
   };
   window._undoCreateTx = async function(payload) {
-    if (_origCreate) await _origCreate.call(null, payload);
-    if (typeof _backupLocalTx === 'function') _backupLocalTx();
+    const fn = window._realCreateTx || _origCreate;
+    if (fn) await fn(payload);
+    if (typeof window._backupLocalTx === 'function') window._backupLocalTx();
   };
   window._undoUpdateTx = async function(id, payload) {
-    if (_origUpdate) await _origUpdate.call(null, id, payload);
-    if (typeof _backupLocalTx === 'function') _backupLocalTx();
+    const fn = window._realUpdateTx || _origUpdate;
+    if (fn) await fn(id, payload);
+    if (typeof window._backupLocalTx === 'function') window._backupLocalTx();
   };
 
   /* ── Main undo action ── */
