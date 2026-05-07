@@ -4407,7 +4407,7 @@ window.setType = type => {
 };
 
 window.saveTransaction = async () => {
-  const valorRaw = document.getElementById('f-valor').value.replace(/[^0-9.]/g,'');
+  const valorRaw = document.getElementById('f-valor').value.replace(/[^0-9.,]/g,'').replace(',','.');
   const valor = parseFloat(valorRaw);
   const data  = document.getElementById('f-data').value;
   const catEl = document.getElementById('f-cat');
@@ -4544,7 +4544,7 @@ function hookAutoClassify() {
     const newValor = valorEl.cloneNode(true);
     valorEl.parentNode.replaceChild(newValor, valorEl);
     newValor.addEventListener('input', () => {
-      let v = newValor.value.replace(/[^0-9.]/g,'');
+      let v = newValor.value.replace(/[^0-9.,]/g,'').replace(',','.');
       // Allow only one decimal point
       const parts = v.split('.');
       if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
