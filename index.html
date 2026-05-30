@@ -2164,6 +2164,41 @@ button:focus-visible,.nav-btn:focus-visible,.icon-btn:focus-visible{box-shadow:0
   </div>
 </div>
 
+<!-- ══════════════ NOVA CATEGORIA MODAL ══════════════ -->
+<div class="overlay" id="newcat-modal-overlay" onclick="if(event.target===this)closeNewCatModal()">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <div class="modal-title">Nova Categoria</div>
+      <button class="modal-close" onclick="closeNewCatModal()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-field">
+        <label class="form-label">Nome da categoria</label>
+        <input class="form-input" id="newcat-name" type="text" placeholder="Ex: Academia, Pets, Viagens…" maxlength="40">
+        <div class="field-error" id="err-newcat">Informe um nome para a categoria</div>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Tipo padrão</label>
+        <select class="form-input" id="newcat-type">
+          <option value="expense">Despesa</option>
+          <option value="income">Receita</option>
+          <option value="both">Ambos</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Ícone (emoji)</label>
+        <input class="form-input" id="newcat-icon" type="text" placeholder="📦" maxlength="4" style="font-size:22px;text-align:center">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeNewCatModal()">Cancelar</button>
+      <button class="btn-primary" onclick="saveNewCategory()">Adicionar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══════════════ TOAST CONTAINER ══════════════ -->
 <div id="toast-container"></div>
 
@@ -2473,9 +2508,15 @@ button:focus-visible,.nav-btn:focus-visible,.icon-btn:focus-visible{box-shadow:0
 
       <!-- ── CATEGORIES ── -->
       <div class="page" id="p-categories">
-        <div class="page-header">
-          <h2>Categorias</h2>
-          <p>Ranking e análise por categoria de gasto</p>
+        <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <h2>Categorias</h2>
+            <p>Ranking e análise por categoria de gasto</p>
+          </div>
+          <button class="primary-btn" onclick="openNewCatModal()" style="font-size:11px;padding:7px 16px;flex-shrink:0">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>Nova Categoria</span>
+          </button>
         </div>
         <div id="catls"></div>
       </div>
@@ -2984,6 +3025,7 @@ let editingInvId    = null;
 let editingCCId     = null;
 let editingCCExpId  = null;
 let userBudgets     = {};
+let userCustomCats  = JSON.parse(localStorage.getItem('financas_custom_cats') || '[]');
 let txUnsubscribe   = null;
 let isDark          = localStorage.getItem('theme') !== 'light';
 let curPage         = 'dashboard';
@@ -5241,6 +5283,83 @@ window.editBudget = (cat, idx) => {
   inp.addEventListener('blur', save);
   inp.addEventListener('keydown', e => { if(e.key==='Enter') inp.blur(); if(e.key==='Escape') { inp.value=cur; inp.blur(); } });
 };
+
+/* ════════════════════════════════════════
+   NOVA CATEGORIA
+════════════════════════════════════════ */
+window.openNewCatModal = () => {
+  document.getElementById('newcat-name').value = '';
+  document.getElementById('newcat-icon').value = '';
+  document.getElementById('newcat-type').value = 'expense';
+  document.getElementById('err-newcat').style.display = 'none';
+  document.getElementById('newcat-modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('newcat-name').focus(), 80);
+};
+
+window.closeNewCatModal = () => {
+  document.getElementById('newcat-modal-overlay').classList.remove('open');
+};
+
+window.saveNewCategory = () => {
+  const nameEl = document.getElementById('newcat-name');
+  const iconEl = document.getElementById('newcat-icon');
+  const typeEl = document.getElementById('newcat-type');
+  const errEl  = document.getElementById('err-newcat');
+  const name   = nameEl.value.trim();
+  if (!name) {
+    errEl.style.display = 'block';
+    nameEl.focus();
+    return;
+  }
+  errEl.style.display = 'none';
+  // Check for duplicates
+  const allExisting = [
+    ...Object.keys(CAT_DEFS),
+    ...userCustomCats.map(c => c.name)
+  ].map(n => n.toLowerCase());
+  if (allExisting.includes(name.toLowerCase())) {
+    errEl.textContent = 'Essa categoria já existe';
+    errEl.style.display = 'block';
+    return;
+  }
+  const icon = iconEl.value.trim() || '📂';
+  const type = typeEl.value;
+  const newCat = { name, icon, type };
+  userCustomCats.push(newCat);
+  localStorage.setItem('financas_custom_cats', JSON.stringify(userCustomCats));
+  // Register in CAT_DEFS so autoClassify and getCatDef work
+  CAT_DEFS[name] = { icon, color: '', keywords: [] };
+  // Update the category name lists
+  if (type === 'income') {
+    window.CAT_NAMES_INCOME = [...window.CAT_NAMES_INCOME, name];
+  } else if (type === 'both') {
+    window.CAT_NAMES_EXPENSE = [...window.CAT_NAMES_EXPENSE, name];
+    window.CAT_NAMES_INCOME  = [...window.CAT_NAMES_INCOME,  name];
+  } else {
+    window.CAT_NAMES_EXPENSE = [...window.CAT_NAMES_EXPENSE, name];
+  }
+  closeNewCatModal();
+  toast(`Categoria "${name}" adicionada com sucesso!`, 'success');
+  // Re-render categories page and refresh modal selects if open
+  const { CATS } = compute(allTransactions);
+  if (curPage === 'categories') renderCats(CATS);
+  buildCatList();
+};
+
+/* Injeta categorias customizadas no CAT_DEFS na inicialização */
+(function applyCustomCats() {
+  userCustomCats.forEach(c => {
+    if (!CAT_DEFS[c.name]) {
+      CAT_DEFS[c.name] = { icon: c.icon || '📂', color: '', keywords: [] };
+    }
+    if (c.type === 'income' || c.type === 'both') {
+      if (!window.CAT_NAMES_INCOME.includes(c.name)) window.CAT_NAMES_INCOME.push(c.name);
+    }
+    if (c.type === 'expense' || c.type === 'both') {
+      if (!window.CAT_NAMES_EXPENSE.includes(c.name)) window.CAT_NAMES_EXPENSE.push(c.name);
+    }
+  });
+})();
 
 /* ════════════════════════════════════════
    CANVAS HELPERS
