@@ -2257,6 +2257,10 @@ button:focus-visible,.nav-btn:focus-visible,.icon-btn:focus-visible{box-shadow:0
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/></svg>
         <span class="nav-label">Metas</span>
       </button>
+      <button class="nav-btn" onclick="go('planning',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="14" x2="10" y2="14"/><line x1="12" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="10" y2="18"/></svg>
+        <span class="nav-label">Planejamento</span>
+      </button>
       <button class="nav-btn" onclick="go('investments',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
         <span class="nav-label">Investimentos</span>
@@ -2547,6 +2551,92 @@ button:focus-visible,.nav-btn:focus-visible,.icon-btn:focus-visible{box-shadow:0
       </div>
 
       <!-- ── INVESTMENTS ── -->
+      <!-- ═══════════ PLANEJAMENTO ═══════════ -->
+      <div class="page" id="p-planning">
+        <div class="topbar-row" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+          <div>
+            <h2 style="font-family:var(--ff-serif);font-size:22px;font-weight:600;letter-spacing:.01em">Planejamento Financeiro</h2>
+            <p style="color:var(--text2);font-size:12px;margin-top:2px">Simule receitas e despesas futuras sem afetar seu saldo real</p>
+          </div>
+          <button class="btn-primary" onclick="openPlanModal()" style="font-size:12px;padding:8px 16px;display:flex;align-items:center;gap:6px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Novo item
+          </button>
+        </div>
+
+        <!-- Month tabs -->
+        <div id="plan-month-tabs" style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:20px;scrollbar-width:none"></div>
+
+        <!-- Summary KPI row -->
+        <div id="plan-kpis" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px"></div>
+
+        <!-- Progress bar: planned balance vs real -->
+        <div class="card" id="plan-balance-bar" style="margin-bottom:20px;padding:18px 20px"></div>
+
+        <!-- Items grid by month -->
+        <div id="plan-items-grid" style="display:flex;flex-direction:column;gap:10px"></div>
+      </div>
+
+      <!-- Planning Modal -->
+      <div class="overlay" id="plan-modal-overlay" onclick="if(event.target===this)closePlanModal()" style="display:none;opacity:0">
+        <div class="modal" style="max-width:420px">
+          <div class="modal-header">
+            <div class="modal-title" id="plan-modal-title">Novo Item de Planejamento</div>
+            <button class="modal-close" onclick="closePlanModal()">✕</button>
+          </div>
+          <div class="modal-body" style="display:flex;flex-direction:column;gap:14px;padding:20px">
+            <!-- Type -->
+            <div class="type-row" id="plan-type-row">
+              <button class="type-opt" id="plan-type-expense" onclick="setPlanType('expense')" style="flex:1">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Despesa
+              </button>
+              <button class="type-opt" id="plan-type-income" onclick="setPlanType('income')" style="flex:1">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+                Receita
+              </button>
+            </div>
+            <!-- Description -->
+            <div class="field">
+              <label class="field-label">Descrição</label>
+              <input class="form-input" id="plan-desc" type="text" placeholder="Ex: Aluguel, Salário, Netflix…" maxlength="60">
+              <div class="field-error" id="err-plan-desc">Informe uma descrição</div>
+            </div>
+            <!-- Value -->
+            <div class="field">
+              <label class="field-label">Valor (R$)</label>
+              <input class="form-input" id="plan-valor" type="text" inputmode="decimal" placeholder="0,00">
+              <div class="field-error" id="err-plan-valor">Valor deve ser maior que zero</div>
+            </div>
+            <!-- Month -->
+            <div class="field">
+              <label class="field-label">Mês de referência</label>
+              <input class="form-input" id="plan-month" type="month">
+              <div class="field-error" id="err-plan-month">Informe o mês</div>
+            </div>
+            <!-- Category -->
+            <div class="field">
+              <label class="field-label">Categoria</label>
+              <select class="form-input" id="plan-cat"></select>
+            </div>
+            <!-- Recurrence -->
+            <div class="field">
+              <label class="field-label">Repetição</label>
+              <select class="form-input" id="plan-recur">
+                <option value="once">Somente este mês</option>
+                <option value="3">Próximos 3 meses</option>
+                <option value="6">Próximos 6 meses</option>
+                <option value="12">Próximos 12 meses</option>
+              </select>
+            </div>
+          </div>
+          <div style="padding:0 20px 20px;display:flex;gap:10px">
+            <button class="btn-secondary" onclick="closePlanModal()" style="flex:1">Cancelar</button>
+            <button class="btn-primary" onclick="savePlanItem()" style="flex:2" id="plan-save-btn">Salvar</button>
+          </div>
+        </div>
+      </div>
+
       <div class="page" id="p-investments">
         <div class="page-header">
           <h2>Investimentos</h2>
@@ -2759,6 +2849,10 @@ button:focus-visible,.nav-btn:focus-visible,.icon-btn:focus-visible{box-shadow:0
       </button>
       <button class="mob-nav-btn" id="mob-btn-budget" onclick="go('budget',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        <div class="mob-dot"></div>
+      </button>
+      <button class="mob-nav-btn" id="mob-btn-planning" onclick="go('planning',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="14" x2="10" y2="14"/><line x1="12" y1="14" x2="16" y2="14"/></svg>
         <div class="mob-dot"></div>
       </button>
       <button class="mob-nav-btn" id="mob-btn-investments" onclick="go('investments',this)">
@@ -5619,7 +5713,8 @@ window.refreshAll = () => {
 const PAGE_TITLES = {
   dashboard:'Dashboard', analysis:'Análise',
   transactions:'Transações', categories:'Categorias', budget:'Orçamento',
-  investments:'Investimentos', creditcard:'Cartão de Crédito'
+  investments:'Investimentos', creditcard:'Cartão de Crédito',
+  planning:'Planejamento'
 };
 
 
@@ -5661,6 +5756,7 @@ function _activatePage(pg) {
   if (pg==='dashboard')    { renderSrc(SRC); renderPieLeg(CATS); }
   if (pg==='investments')  renderInvestments();
   if (pg==='creditcard')   renderCreditCards();
+  if (pg==='planning')     renderPlanning();
   setTimeout(() => renderCharts(pg), 40);
 }
 
@@ -7419,6 +7515,342 @@ window.go = (pg, btn) => {
   // hookAutoClassify is called on openModal, no need to call here
   // Resize handler already configured above
 })();
+
+/* ═══════════════════════════════════════════════════════════
+   PLANEJAMENTO FINANCEIRO
+   Dados armazenados em localStorage, independentes do saldo real
+═══════════════════════════════════════════════════════════ */
+(function initPlanning() {
+
+  /* ── Storage helpers ── */
+  const LS_KEY = 'financas_planning_v1';
+
+  function loadPlanItems() {
+    try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); }
+    catch(e) { return []; }
+  }
+
+  function savePlanItems(items) {
+    localStorage.setItem(LS_KEY, JSON.stringify(items));
+  }
+
+  /* ── State ── */
+  let planItems = loadPlanItems();
+  let planEditId = null;
+  let planActiveMonth = null; // 'YYYY-MM'
+  let planType = 'expense';
+
+  /* ── Helpers ── */
+  function todayMonth() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  }
+
+  function monthLabel(ym) {
+    const [y, m] = ym.split('-');
+    const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    return `${months[+m-1]}/${y.slice(2)}`;
+  }
+
+  function fmtPlan(v) {
+    return `R$ ${Math.abs(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+  }
+
+  function uniqueId() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+  }
+
+  /* ── Get all months present in items + current month ── */
+  function getAllMonths() {
+    const now = todayMonth();
+    const set = new Set([now]);
+    planItems.forEach(i => set.add(i.month));
+    return [...set].sort();
+  }
+
+  /* ── Build category select ── */
+  function buildPlanCatSelect(type) {
+    const sel = document.getElementById('plan-cat');
+    if (!sel) return;
+    const cats = type === 'income'
+      ? (window.CAT_NAMES_INCOME || [])
+      : (window.CAT_NAMES_EXPENSE || []);
+    sel.innerHTML = `<option value="">— Categoria —</option>` +
+      cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  }
+
+  /* ── Render KPIs for active month ── */
+  function renderPlanKPIs(month, items) {
+    const el = document.getElementById('plan-kpis');
+    if (!el) return;
+    const income  = items.filter(i=>i.type==='income').reduce((a,i)=>a+i.value,0);
+    const expense = items.filter(i=>i.type==='expense').reduce((a,i)=>a+i.value,0);
+    const net     = income - expense;
+    const netColor = net >= 0 ? 'var(--green)' : 'var(--red)';
+    el.innerHTML = `
+      <div class="card" style="padding:16px 18px">
+        <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);margin-bottom:6px">Receitas Planejadas</div>
+        <div style="font-family:var(--mono);font-size:18px;color:var(--green);font-weight:600">${fmtPlan(income)}</div>
+      </div>
+      <div class="card" style="padding:16px 18px">
+        <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);margin-bottom:6px">Despesas Planejadas</div>
+        <div style="font-family:var(--mono);font-size:18px;color:var(--red);font-weight:600">${fmtPlan(expense)}</div>
+      </div>
+      <div class="card" style="padding:16px 18px">
+        <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);margin-bottom:6px">Saldo Projetado</div>
+        <div style="font-family:var(--mono);font-size:18px;color:${netColor};font-weight:600">${net>=0?'+':''}${fmtPlan(net)}</div>
+      </div>`;
+  }
+
+  /* ── Render balance comparison bar ── */
+  function renderPlanBalanceBar(month, items) {
+    const el = document.getElementById('plan-balance-bar');
+    if (!el) return;
+    // Compute real balance from transactions up to this month
+    const realBalance = (window.allTransactions || [])
+      .filter(t => t.date && t.date.slice(0,7) <= month)
+      .reduce((a, t) => a + (t.type==='entrada' ? t.valor : -t.valor), 0);
+
+    const planIncome  = items.filter(i=>i.type==='income').reduce((a,i)=>a+i.value,0);
+    const planExpense = items.filter(i=>i.type==='expense').reduce((a,i)=>a+i.value,0);
+    const projectedBalance = realBalance + planIncome - planExpense;
+
+    const maxVal = Math.max(Math.abs(realBalance), Math.abs(projectedBalance), 1);
+    const realPct = Math.min(Math.abs(realBalance) / maxVal * 100, 100);
+    const projPct = Math.min(Math.abs(projectedBalance) / maxVal * 100, 100);
+    const projColor = projectedBalance >= 0 ? 'var(--green)' : 'var(--red)';
+
+    el.innerHTML = `
+      <div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text2);margin-bottom:14px;font-weight:600">Comparativo de Saldo — ${monthLabel(month)}</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+            <span style="font-size:12px;color:var(--text2)">Saldo real acumulado</span>
+            <span style="font-family:var(--mono);font-size:12px;color:${realBalance>=0?'var(--green)':'var(--red)'}">${realBalance>=0?'+':''}${fmtPlan(realBalance)}</span>
+          </div>
+          <div class="prog-track" style="height:6px"><div class="prog-fill" style="width:${realPct}%;background:${realBalance>=0?'var(--green)':'var(--red)'}"></div></div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+            <span style="font-size:12px;color:var(--text2)">Saldo projetado após planejamento</span>
+            <span style="font-family:var(--mono);font-size:12px;color:${projColor}">${projectedBalance>=0?'+':''}${fmtPlan(projectedBalance)}</span>
+          </div>
+          <div class="prog-track" style="height:6px"><div class="prog-fill" style="width:${projPct}%;background:${projColor};opacity:.7"></div></div>
+        </div>
+      </div>
+      <div style="margin-top:12px;font-size:11px;color:var(--text2);font-style:italic">⚠ Este saldo projetado não afeta suas transações reais.</div>`;
+  }
+
+  /* ── Render items list ── */
+  function renderPlanItemsList(month, items) {
+    const el = document.getElementById('plan-items-grid');
+    if (!el) return;
+    if (!items.length) {
+      el.innerHTML = `<div class="card" style="padding:32px;text-align:center;color:var(--text2)">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.3;margin-bottom:10px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/></svg>
+        <p style="font-size:13px">Nenhum item planejado para ${monthLabel(month)}</p>
+        <p style="font-size:11px;margin-top:4px">Clique em "Novo item" para começar</p>
+      </div>`;
+      return;
+    }
+    const income  = items.filter(i=>i.type==='income');
+    const expense = items.filter(i=>i.type==='expense');
+
+    function renderGroup(list, type) {
+      if (!list.length) return '';
+      const label = type==='income' ? 'Receitas' : 'Despesas';
+      const color = type==='income' ? 'var(--green)' : 'var(--red)';
+      const rows = list.map(item => `
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);transition:background var(--t)" onmouseover="this.style.background='var(--hover)'" onmouseout="this.style.background=''">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(item.desc)}</div>
+            ${item.cat ? `<div style="font-size:11px;color:var(--text2);margin-top:1px">${esc(item.cat)}</div>` : ''}
+          </div>
+          <div style="font-family:var(--mono);font-size:13px;font-weight:600;color:${color};flex-shrink:0">${fmtPlan(item.value)}</div>
+          <div style="display:flex;gap:6px;flex-shrink:0">
+            <button onclick="editPlanItem('${item.id}')" style="background:none;border:none;padding:4px;color:var(--text2);cursor:pointer;border-radius:4px;transition:color var(--t)" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--text2)'" title="Editar">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button onclick="deletePlanItem('${item.id}')" style="background:none;border:none;padding:4px;color:var(--text2);cursor:pointer;border-radius:4px;transition:color var(--t)" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text2)'" title="Excluir">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+            </button>
+          </div>
+        </div>`).join('');
+      return `
+        <div class="card" style="overflow:hidden">
+          <div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
+            <span style="width:8px;height:8px;border-radius:2px;background:${color};display:inline-block"></span>
+            <span style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text2)">${label}</span>
+          </div>
+          ${rows}
+        </div>`;
+    }
+
+    el.innerHTML = renderGroup(income,'income') + renderGroup(expense,'expense');
+  }
+
+  /* ── Render month tabs ── */
+  function renderPlanMonthTabs() {
+    const el = document.getElementById('plan-month-tabs');
+    if (!el) return;
+    const months = getAllMonths();
+    if (!planActiveMonth || !months.includes(planActiveMonth)) {
+      planActiveMonth = todayMonth();
+    }
+    el.innerHTML = months.map(m => {
+      const act = m === planActiveMonth;
+      return `<button onclick="selectPlanMonth('${m}')" style="
+        flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid ${act?'var(--gold)':'var(--border)'};
+        background:${act?'var(--gold-s)':'transparent'};color:${act?'var(--gold)':'var(--text2)'};
+        font-size:12px;font-weight:${act?'700':'400'};cursor:pointer;transition:all var(--t);font-family:var(--ff)
+      ">${monthLabel(m)}</button>`;
+    }).join('');
+  }
+
+  /* ── Main render ── */
+  window.renderPlanning = function() {
+    if (!planActiveMonth) planActiveMonth = todayMonth();
+    renderPlanMonthTabs();
+    const items = planItems.filter(i => i.month === planActiveMonth);
+    renderPlanKPIs(planActiveMonth, items);
+    renderPlanBalanceBar(planActiveMonth, items);
+    renderPlanItemsList(planActiveMonth, items);
+  };
+
+  window.selectPlanMonth = function(m) {
+    planActiveMonth = m;
+    window.renderPlanning();
+  };
+
+  /* ── Modal open/close ── */
+  window.openPlanModal = function() {
+    planEditId = null;
+    document.getElementById('plan-modal-title').textContent = 'Novo Item de Planejamento';
+    document.getElementById('plan-save-btn').textContent = 'Salvar';
+    document.getElementById('plan-desc').value = '';
+    document.getElementById('plan-valor').value = '';
+    document.getElementById('plan-month').value = planActiveMonth || todayMonth();
+    document.getElementById('plan-recur').value = 'once';
+    document.getElementById('err-plan-desc').style.display = 'none';
+    document.getElementById('err-plan-valor').style.display = 'none';
+    document.getElementById('err-plan-month').style.display = 'none';
+    setPlanType('expense');
+    buildPlanCatSelect('expense');
+    const ov = document.getElementById('plan-modal-overlay');
+    ov.style.display = 'flex';
+    requestAnimationFrame(() => { ov.style.transition='opacity .2s'; ov.style.opacity='1'; });
+    setTimeout(() => document.getElementById('plan-desc').focus(), 80);
+  };
+
+  window.closePlanModal = function() {
+    const ov = document.getElementById('plan-modal-overlay');
+    ov.style.opacity = '0';
+    setTimeout(() => { ov.style.display = 'none'; }, 200);
+  };
+
+  window.setPlanType = function(type) {
+    planType = type;
+    const exp = document.getElementById('plan-type-expense');
+    const inc = document.getElementById('plan-type-income');
+    if (!exp || !inc) return;
+    if (type==='expense') {
+      exp.style.background = 'var(--red-s)'; exp.style.color = 'var(--red)'; exp.style.borderColor='rgba(196,112,112,.3)';
+      inc.style.background = ''; inc.style.color = ''; inc.style.borderColor='';
+    } else {
+      inc.style.background = 'var(--green-s)'; inc.style.color = 'var(--green)'; inc.style.borderColor='rgba(110,184,150,.3)';
+      exp.style.background = ''; exp.style.color = ''; exp.style.borderColor='';
+    }
+    buildPlanCatSelect(type);
+  };
+
+  /* ── Edit ── */
+  window.editPlanItem = function(id) {
+    const item = planItems.find(i => i.id === id);
+    if (!item) return;
+    planEditId = id;
+    document.getElementById('plan-modal-title').textContent = 'Editar Item';
+    document.getElementById('plan-save-btn').textContent = 'Atualizar';
+    document.getElementById('plan-desc').value = item.desc;
+    document.getElementById('plan-valor').value = item.value.toFixed(2).replace('.',',');
+    document.getElementById('plan-month').value = item.month;
+    document.getElementById('plan-recur').value = 'once';
+    document.getElementById('err-plan-desc').style.display = 'none';
+    document.getElementById('err-plan-valor').style.display = 'none';
+    document.getElementById('err-plan-month').style.display = 'none';
+    setPlanType(item.type);
+    buildPlanCatSelect(item.type);
+    document.getElementById('plan-cat').value = item.cat || '';
+    const ov = document.getElementById('plan-modal-overlay');
+    ov.style.display = 'flex';
+    requestAnimationFrame(() => { ov.style.transition='opacity .2s'; ov.style.opacity='1'; });
+    setTimeout(() => document.getElementById('plan-desc').focus(), 80);
+  };
+
+  /* ── Delete ── */
+  window.deletePlanItem = function(id) {
+    planItems = planItems.filter(i => i.id !== id);
+    savePlanItems(planItems);
+    window.renderPlanning();
+    toast('Item removido', 'info');
+  };
+
+  /* ── Save ── */
+  window.savePlanItem = function() {
+    const descEl  = document.getElementById('plan-desc');
+    const valorEl = document.getElementById('plan-valor');
+    const monthEl = document.getElementById('plan-month');
+    const catEl   = document.getElementById('plan-cat');
+    const recurEl = document.getElementById('plan-recur');
+
+    let valid = true;
+
+    const desc = descEl.value.trim();
+    if (!desc) {
+      document.getElementById('err-plan-desc').style.display = 'block'; valid = false;
+    } else { document.getElementById('err-plan-desc').style.display = 'none'; }
+
+    const rawVal = valorEl.value.replace(',','.').trim();
+    const value  = parseFloat(rawVal);
+    if (!value || value <= 0) {
+      document.getElementById('err-plan-valor').style.display = 'block'; valid = false;
+    } else { document.getElementById('err-plan-valor').style.display = 'none'; }
+
+    const month = monthEl.value;
+    if (!month) {
+      document.getElementById('err-plan-month').style.display = 'block'; valid = false;
+    } else { document.getElementById('err-plan-month').style.display = 'none'; }
+
+    if (!valid) return;
+
+    const cat   = catEl.value;
+    const recur = recurEl.value;
+
+    if (planEditId) {
+      // Update existing
+      const idx = planItems.findIndex(i => i.id === planEditId);
+      if (idx !== -1) {
+        planItems[idx] = { ...planItems[idx], desc, value, month, cat, type: planType };
+      }
+    } else {
+      // Create new — handle recurrence
+      const months = recur === 'once' ? 1 : parseInt(recur);
+      const [y, m] = month.split('-').map(Number);
+      for (let i = 0; i < months; i++) {
+        const d = new Date(y, m - 1 + i, 1);
+        const ym = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+        planItems.push({ id: uniqueId(), desc, value, month: ym, cat, type: planType });
+      }
+    }
+
+    savePlanItems(planItems);
+    closePlanModal();
+    window.renderPlanning();
+    toast(planEditId ? 'Item atualizado!' : `${recur==='once'?'Item adicionado!':'Itens criados para '+recur+' meses!'}`, 'success');
+    planEditId = null;
+  };
+
+})();
+
 </script>
 
 </body>
